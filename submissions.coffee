@@ -27,13 +27,13 @@ schemaObject =
   skipExpression :
     type : Boolean
     optional : true
-  SVGData :
+  geometryDrawData:
     type : Array
     optional : true
-  "SVGData.$" :
+  "geometryDrawData.$" :
     type : Object
     blackbox : true
-  functionData :
+  functionPlotData :
     type : Object
     optional : true
     blackbox : true
