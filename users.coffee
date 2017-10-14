@@ -186,6 +186,32 @@ exports.sendVerificationEmail = new ValidatedMethod
           subject : text
           text : text
 
+exports.setRoleOnOff = new ValidatedMethod
+  name : "setRoleOnOff"
+  validate :
+    new SimpleSchema
+      userId :
+        type : String
+      role :
+        type : String
+      isOn :
+        type : Boolean
+    .validator()
+  run : ({ userId, role, isOn }) ->
+    unless @userId
+      throw new Meteor.Error "not logged-in"
+    unless Roles.userIsInRole @userId, "admin"
+      throw new Meteor.Error "not admin"
+    if role is "admin" and not
+    Roles.userIsInRole @userId, "superAdmin"
+      throw new Meteor.Error "not superAdmin"
+    if role is "admin" and userId is @userId
+      throw new Meteor.Error "may not toggle own admin role"
+    if isOn
+      Roles.addUsersToRoles userId, role
+    else
+      Roles.removeUsersFromRoles userId, role
+
 exports.toggleRole = new ValidatedMethod
   name : "toggleRole"
   validate :
