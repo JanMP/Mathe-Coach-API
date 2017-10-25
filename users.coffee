@@ -236,6 +236,7 @@ exports.toggleRole = new ValidatedMethod
     else
       Roles.addUsersToRoles userId, role
 
+#TODO: Add some more security to this
 exports.setUserSchoolClass = new ValidatedMethod
   name : "setUserSchoolClass"
   validate :
@@ -248,8 +249,8 @@ exports.setUserSchoolClass = new ValidatedMethod
   run : ({ userId, schoolClassId }) ->
     unless @userId
       throw new Meteor.Error "not logged-in"
-    unless (Roles.userIsInRole @userId, "admin") or (userId is @userId)
-      throw new Meteor.Error "not admin or user"
+    unless (Roles.userIsInRole @userId, "admin") or (Roles.userIsInRole @userId, "mentor") or (userId is @userId)
+      throw new Meteor.Error "not admin or teacher or user"
     Meteor.users.update _id : userId,
       $set :
         "schoolClassId" : schoolClassId
