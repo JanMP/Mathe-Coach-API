@@ -82,6 +82,9 @@ exports.userSchema = userSchema = new SimpleSchema
   useKaTeX :
     type : Boolean
     optional : true
+  language :
+    type : String
+    optional : true
   navbarSize :
     type : Number
     min : .3
@@ -99,7 +102,7 @@ exports.userSchema = userSchema = new SimpleSchema
     optional : true
 Meteor.users.attachSchema userSchema
 
-#TODO: weed out collection helpers id:4
+#PLANNING:20 weed out collection helpers id:4
 Meteor.users.helpers
   fullName : ->
     "#{@profile.firstName} #{@profile.lastName}"
@@ -236,7 +239,7 @@ exports.toggleRole = new ValidatedMethod
     else
       Roles.addUsersToRoles userId, role
 
-#TODO: Add some more security to this
+#PLANNING:0 Add some more security to this
 exports.setUserSchoolClass = new ValidatedMethod
   name : "setUserSchoolClass"
   validate :
@@ -307,6 +310,18 @@ exports.updateTeXSetting = new ValidatedMethod
     Meteor.users.update @userId,
       $set :
         useKaTeX : useKaTeX
+
+exports.setLanguage = new ValidatedMethod
+  name : "setLanguage"
+  validate :
+    new SimpleSchema
+      language : String
+    .validator()
+  run : ({language}) ->
+    unless @userId
+      throw new Meteor.Error "not logged-in"
+    Meteor.users.update @userId,
+      $set : {language}
 
 exports.deleteUser = new ValidatedMethod
   name : "deleteUser"
