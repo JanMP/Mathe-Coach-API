@@ -9,7 +9,7 @@ require "./users.coffee"
 schemaObject =
   moduleKey :
     type : String
-  moduleTitle :
+  title :
     type : String
   level :
     type : Number
