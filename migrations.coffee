@@ -60,3 +60,16 @@ Migrations.add
           $set :
             functionPlotData : submission.functionData
     console.log "#{changed} entries changed"
+
+Migrations.add
+  version : 4
+  up : ->
+    changed = 0
+    Submissions.find().fetch()
+    .forEach (submission) ->
+      unless submission.title?
+        changed += 1
+        Submissions.update _id : submission._id,
+          $set :
+            title : "[#{submission.moduleKey}]"
+    console.log "#{changed} titles added"
