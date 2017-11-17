@@ -105,7 +105,8 @@ Meteor.users.attachSchema userSchema
 #PLANNING:20 weed out collection helpers id:4
 Meteor.users.helpers
   fullName : ->
-    "#{@profile.firstName} #{@profile.lastName}"
+    if @profile?.firstName and @profile?.lastName
+      "#{@profile?.firstName} #{@profile?.lastName}"
   avatar : ->
     hash = md5(@emails[0]?.address.toLowerCase() ? "0")
     "https://www.gravatar.com/avatar/#{hash}"
@@ -131,10 +132,10 @@ Meteor.users.helpers
   schoolClass : ->
     SchoolClasses.findOne
       _id : @schoolClassId
-  isMentor : ->
-    Roles.userIsInRole @_id(), "mentor"
+  isTeacher : ->
+    Roles.userIsInRole @_id, "mentor"
   isAdmin : ->
-    Roles.userIsInRole @_id(), "admin"
+    Roles.userIsInRole @_id, "admin"
   hasTeacher : -> @schoolClass?.teacher?
 
 
