@@ -112,19 +112,19 @@ Meteor.users.helpers
     "https://www.gravatar.com/avatar/#{hash}"
   submissions : ->
     Submissions.find
-      userId : @_id()
+      userId : @_id
     ,
       sort :
         date : -1
   lastSubmission : ->
     Submissions.findOne
-      userId : @_id()
+      userId : @_id
     ,
       sort :
         date : -1
   submissionsPage : (page = 1) ->
     Submissions.find
-      userId : @_id()
+      userId : @_id
     ,
       sort :
         date : -1
