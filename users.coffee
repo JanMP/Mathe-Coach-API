@@ -130,13 +130,12 @@ Meteor.users.helpers
         date : -1
       limit : 10*page
   schoolClass : ->
-    SchoolClasses.findOne
-      _id : @schoolClassId
+    SchoolClasses.findOne _id : @schoolClassId
   isTeacher : ->
     Roles.userIsInRole @_id, "mentor"
   isAdmin : ->
     Roles.userIsInRole @_id, "admin"
-  hasTeacher : -> @schoolClass?.teacher?
+  teacher : -> @schoolClass()?.teacher()
 
 
 exports.setLayout = new ValidatedMethod

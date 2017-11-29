@@ -7,13 +7,25 @@ import SimpleSchema from "simpl-schema"
 
 if Meteor.isServer
   #PLANNING:30 add publication for current user data
-  Meteor.publish "userData", ->
+  Meteor.publish "userOwnData", ->
     if @userId
       Meteor.users.find _id : @userId
     else
       @ready()
 
-  Meteor.publish "mentorData", ->
+  Meteor.publish "userData", ({id}) ->
+    new SimpleSchema
+      id :
+        type : String
+    .validate {id}
+    cursor = Meteor.users.find _id : id
+    user = cursor.fetch()[0]
+    unless user?.teacher?()._id is @userId or Roles.userIsInRole "admin"
+      @ready()
+    else
+      cursor
+
+  Meteor.publish "teachersData", ->
     Roles.getUsersInRole("mentor")
 
   Meteor.publishComposite "allUserData", ->
@@ -26,11 +38,83 @@ if Meteor.isServer
   Meteor.publish "schoolClasses", ->
     SchoolClasses.find()
 
-  Meteor.publish "userSubmissions", ->
-    unless @userId
+  Meteor.publish "schoolClassUsers", ({schoolClassId}) ->
+    new SimpleSchema
+      schoolClassId :
+        type : String
+    .validate {schoolClassId}
+    schoolClass = SchoolClasses.findOne _id : schoolClassId
+    unless schoolClass.teacherId is @userId
       @ready()
     else
-      Submissions.find userId : @userId
+      schoolClass.students()
+
+
+  Meteor.publish "userSubmissions", ({userId, page}) ->
+    new SimpleSchema
+      userId :
+        type : String
+      page :
+        type : Number
+        optional : true
+    .validate {userId, page}
+    user = Meteor.users.findOne _id : userId
+    unless userId is @userId or user?.schoolClass()?.teacherId is @userId
+      @ready()
+    else
+      if page?
+        user?.submissionsPage page
+      else
+        user?.submissions()
+
+  Meteor.publish "userStatistics", ({userId}) ->
+    dateFormat ="D-M-Y"
+    submissionCount = 0
+    obj =
+      total : 0
+      correct : 0
+      incorrect : 0
+      byDate : {}
+    initializing = true
+    handle = Submissions.find({userId}).observeChanges
+      added :
+        (id, submission) =>
+          dk = moment(submission.date).startOf("day").format(dateFormat)
+          mk = submission.moduleKey
+          lk = "#{submission.level}"
+          rk = if submission.answerCorrect then "correct" else "incorrect"
+          obj.total += 1
+          obj[rk] += 1
+          unless obj.byDate[dk]?
+            obj.byDate[dk] =
+              total : 0
+              correct : 0
+              incorrect : 0
+              byModule : {}
+          obj.byDate[dk].total += 1
+          obj.byDate[dk][rk] += 1
+          unless obj.byDate[dk].byModule[mk]?
+            obj.byDate[dk].byModule[mk] =
+              total : 0
+              correct : 0
+              incorrect : 0
+              byLevel : {}
+          obj.byDate[dk].byModule[mk].total += 1
+          obj.byDate[dk].byModule[mk][rk] += 1
+          unless obj.byDate[dk].byModule[mk].byLevel[lk]?
+            obj.byDate[dk].byModule[mk].byLevel[lk] =
+              total : 0
+              correct : 0
+              incorrect : 0
+          obj.byDate[dk].byModule[mk].byLevel[lk].total += 1
+          obj.byDate[dk].byModule[mk].byLevel[lk][rk] += 1
+          unless initializing
+            @changed "userStatistics", userId, {submissionCount, obj}
+    initializing = false
+    @added "userStatistics", userId, { submissions : obj }
+    @ready()
+    @onStop -> handle.stop()
+
 
   Meteor.publishComposite "schoolClassActivityGraphs", ->
     find : ->
@@ -42,46 +126,6 @@ if Meteor.isServer
       children : [
         find : (schoolClass) ->
           ActivityGraphs.find schoolClassId : schoolClass._id
-      ]
-    ]
-
-  Meteor.publishComposite "studentSubmissions", ->
-    find : ->
-      Meteor.users.find
-        _id : @userId
-      ,
-        fields :
-          username : 1
-          profile : 1
-          emails : 1
-          useKaTeX : 1
-          navbarSize : 1
-          contentSize : 1
-          keypadSize : 1
-          schoolClassId : 1
-    children : [
-      find : (teacher) ->
-        SchoolClasses.find
-          teacherId : teacher._id
-        ,
-          fields :
-            name : 1
-            teacherId : 1
-      children : [
-        find : (schoolClass) ->
-          Meteor.users.find
-            "schoolClassId" : schoolClass._id
-          ,
-            fields :
-              username : 1
-              profile : 1
-              emails : 1
-              schoolClassId : 1
-              lastActive : 1
-        children : [
-          find : (student) ->
-            Submissions.find userId : student._id
-        ]
       ]
     ]
 
@@ -102,22 +146,3 @@ if Meteor.isServer
         Scores.find userId : @userId
       else
         @ready()
-
-if Meteor.isClient
-  #userData is subscribed to in layout template
-  Meteor.subscribe "userData"
-  Tracker.autorun ->
-    if Roles.userIsInRole @Meteor.userId(), "mentor"
-      Meteor.subscribe "studentSubmissions"
-      Meteor.subscribe "schoolClassActivityGraphs"
-  Tracker.autorun ->
-    if Roles.userIsInRole @Meteor.userId(), "admin"
-      Meteor.subscribe "allUserData"
-  Tracker.autorun ->
-    if @Meteor.user()
-      exports.userDataSubscription = Meteor.subscribe "userData"
-      Meteor.subscribe "mentorData"
-      Meteor.subscribe "schoolClasses"
-      exports.userSubmissionsSubscription = Meteor.subscribe "userSubmissions"
-      exports.chatMessagesSubscription = Meteor.subscribe "chatMessages"
-      Meteor.subscribe "userScores"
