@@ -9,6 +9,8 @@ require "./users.coffee"
 schemaObject =
   moduleKey :
     type : String
+  title :
+    type : String
   level :
     type : Number
   answerCorrect :

@@ -1,5 +1,6 @@
 { Mongo } = require "meteor/mongo"
 { Meteor } = require "meteor/meteor"
+
 import SimpleSchema from "simpl-schema"
 _ = require "lodash"
 
@@ -15,6 +16,12 @@ SchoolClasses.schema = new SimpleSchema
     optional : true
 SchoolClasses.attachSchema SchoolClasses.schema
 exports.SchoolClasses = SchoolClasses
+
+SchoolClasses.helpers
+  teacher : ->
+    Meteor.users.findOne _id : @teacherId
+  students : ->
+    Meteor.users.find schoolClassId : @_id
 
 exports.saveSchoolClass = new ValidatedMethod
   name : "saveSchoolClass"

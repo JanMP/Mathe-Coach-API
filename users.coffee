@@ -105,37 +105,37 @@ Meteor.users.attachSchema userSchema
 #PLANNING:20 weed out collection helpers id:4
 Meteor.users.helpers
   fullName : ->
-    "#{@profile.firstName} #{@profile.lastName}"
+    if @profile?.firstName and @profile?.lastName
+      "#{@profile?.firstName} #{@profile?.lastName}"
   avatar : ->
     hash = md5(@emails[0]?.address.toLowerCase() ? "0")
     "https://www.gravatar.com/avatar/#{hash}"
   submissions : ->
     Submissions.find
-      userId : @_id()
+      userId : @_id
     ,
       sort :
         date : -1
   lastSubmission : ->
     Submissions.findOne
-      userId : @_id()
+      userId : @_id
     ,
       sort :
         date : -1
   submissionsPage : (page = 1) ->
     Submissions.find
-      userId : @_id()
+      userId : @_id
     ,
       sort :
         date : -1
       limit : 10*page
   schoolClass : ->
-    SchoolClasses.findOne
-      _id : @schoolClassId
-  isMentor : ->
-    Roles.userIsInRole @_id(), "mentor"
+    SchoolClasses.findOne _id : @schoolClassId
+  isTeacher : ->
+    Roles.userIsInRole @_id, "mentor"
   isAdmin : ->
-    Roles.userIsInRole @_id(), "admin"
-  hasTeacher : -> @schoolClass?.teacher?
+    Roles.userIsInRole @_id, "admin"
+  teacher : -> @schoolClass()?.teacher()
 
 
 exports.setLayout = new ValidatedMethod
