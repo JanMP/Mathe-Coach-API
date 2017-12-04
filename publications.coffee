@@ -6,7 +6,6 @@
 import SimpleSchema from "simpl-schema"
 
 if Meteor.isServer
-  #PLANNING:30 add publication for current user data
   Meteor.publish "userOwnData", ->
     if @userId
       Meteor.users.find _id : @userId
@@ -25,15 +24,15 @@ if Meteor.isServer
     else
       cursor
 
-  Meteor.publish "teachersData", ->
-    Roles.getUsersInRole("mentor")
-
   Meteor.publishComposite "allUserData", ->
     find : ->
       if Roles.userIsInRole @userId, "admin"
         Meteor.users.find()
       else
         @ready()
+
+  Meteor.publish "teachersData", ->
+    Roles.getUsersInRole("mentor")
 
   Meteor.publish "schoolClasses", ->
     SchoolClasses.find()
@@ -48,7 +47,6 @@ if Meteor.isServer
       @ready()
     else
       schoolClass.students()
-
 
   Meteor.publish "userSubmissions", ({userId, page}) ->
     new SimpleSchema
@@ -139,6 +137,8 @@ if Meteor.isServer
             ,
               senderId : @userId
             ]
+      else
+        @ready()
 
   Meteor.publishComposite "userScores", ->
     find : ->

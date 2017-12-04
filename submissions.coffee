@@ -75,7 +75,7 @@ exports.insertSubmission = new ValidatedMethod
   validate :
     new SimpleSchema schemaObject
     .validator()
-  run : ( submission )->
+  run : ( submission ) ->
     unless @userId
       throw new Meteor.Error "not logged-in"
     now = new Date()
