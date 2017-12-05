@@ -19,7 +19,8 @@ if Meteor.isServer
     .validate {id}
     cursor = Meteor.users.find _id : id
     user = cursor.fetch()[0]
-    unless user?.teacher?()?._id is @userId or Roles.userIsInRole "admin"
+    unless user?.teacher?()?._id is @userId or
+    Roles.userIsInRole @userId, "admin"
       @ready()
     else
       cursor
