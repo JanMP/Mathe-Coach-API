@@ -70,39 +70,18 @@ exports.userSchema = userSchema = new SimpleSchema
   heartbeat :
     type : Date
     optional : true
-  #DONE Move schoolClassId out of profile
   schoolClassId :
     type : String
     optional : true
-  #DONE Move lastActive out of profile
   lastActive :
     type : Date
-    optional : true
-  #DONE Move useKaTeX out of profile
-  useKaTeX :
-    type : Boolean
     optional : true
   language :
     type : String
     optional : true
-  navbarSize :
-    type : Number
-    min : .3
-    max : 3
-    optional : true
-  contentSize :
-    type : Number
-    min : .3
-    max : 3
-    optional : true
-  keypadSize :
-    type : Number
-    min : .3
-    max : 3
-    optional : true
 Meteor.users.attachSchema userSchema
 
-#PLANNING:20 weed out collection helpers id:4
+
 Meteor.users.helpers
   fullName : ->
     if @profile?.firstName and @profile?.lastName
@@ -137,30 +116,6 @@ Meteor.users.helpers
     Roles.userIsInRole @_id, "admin"
   teacher : -> @schoolClass()?.teacher()
 
-
-exports.setLayout = new ValidatedMethod
-  name : "setLayout"
-  validate :
-    new SimpleSchema
-      property :
-        type : String
-        allowedValues : ["navbarSize", "contentSize", "keypadSize"]
-      operation :
-        type : String
-        allowedValues : ["+", "-", "reset"]
-    .validator()
-  run : ({ property, operation })   ->
-    unless @userId
-      throw new Meteor.Error "not logged-in"
-    if operation is "reset"
-      Meteor.users.update @userId,
-        $set :
-          "#{property}" : 1
-    else
-      Meteor.users.update @userId,
-        $inc :
-          "#{property}" : if operation is "+" then .05 else -0.05
-
 exports.sendVerificationEmail = new ValidatedMethod
   name : "sendVerificationEmail"
   validate :
@@ -172,6 +127,22 @@ exports.sendVerificationEmail = new ValidatedMethod
     if Meteor.isServer
       console.log "sending verificationEmail to #{userId}"
       Accounts.sendVerificationEmail userId
+
+if Meteor.isServer
+  sendResetPasswordEmail = new ValidatedMethod
+    name : "sendResetPasswordEmail"
+    validate :
+      new SimpleSchema
+        email :
+          type : String
+      .validator()
+    run : ({ email }) ->
+      user = Meteor.users.findOne "emails.0.address" : email
+      unless user?._id?
+        throw new Meteor.Error "no-user-with-email"
+      else
+        Accounts.sendResetPasswordEmail user._id
+        return "email-sent"
 
   exports.sendTestEmail = new ValidatedMethod
     name : "sendTestEmail"
@@ -239,7 +210,6 @@ exports.toggleRole = new ValidatedMethod
     else
       Roles.addUsersToRoles userId, role
 
-#PLANNING:0 Add some more security to this
 exports.setUserSchoolClass = new ValidatedMethod
   name : "setUserSchoolClass"
   validate :
@@ -274,6 +244,34 @@ exports.removeUserFromClass = new ValidatedMethod
       $unset :
         "schoolClassId" : ""
 
+exports.updateUserData = new ValidatedMethod
+  name : "updateUserData"
+  validate :
+    new SimpleSchema
+      userId :
+        type : String
+      firstName :
+        type : String
+      lastName :
+        type : String
+      schoolClassId :
+        type : String
+        optional : true
+      language :
+        type : String
+    .validator()
+  run : ({userId, firstName, lastName, schoolClassId, language}) ->
+    unless @userId
+      throw new Meteor.Error "not logged-in"
+    unless (Roles.userIsInRole @userId, "admin") or @userId is userId
+      throw new Meteor.Error "not admin or owner"
+    Meteor.users.update userId,
+      $set :
+        "profile.firstName" : firstName
+        "profile.lastName" : lastName
+        language : language
+        schoolClassId : schoolClassId
+
 exports.updateUserProfile = new ValidatedMethod
   name : "updateUserProfile"
   validate :
@@ -296,20 +294,6 @@ exports.updateUserProfile = new ValidatedMethod
     Meteor.users.update userId,
       $set :
         profile : profile
-
-exports.updateTeXSetting = new ValidatedMethod
-  name : "updateTeXSetting"
-  validate :
-    new SimpleSchema
-      useKaTeX :
-        type : Boolean
-    .validator()
-  run : ({ useKaTeX }) ->
-    unless @userId
-      throw new Meteor.Error "not logged-in"
-    Meteor.users.update @userId,
-      $set :
-        useKaTeX : useKaTeX
 
 exports.setLanguage = new ValidatedMethod
   name : "setLanguage"
