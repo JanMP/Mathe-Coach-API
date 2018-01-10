@@ -18,7 +18,7 @@ if Meteor.isServer
 
   Accounts.emailTemplates = {
     Accounts.emailTemplates...,
-    from : "no-reply@mathe-coach-janmp.herokuapp.com"
+    from : "no-reply@mathe-coach-rivius.herokuapp.com"
     verifyEmail :
       subject : (user) -> "Willkommen bei MatheCoach"
       text : (user, link) ->
